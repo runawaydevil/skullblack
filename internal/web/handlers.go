@@ -30,7 +30,7 @@ func NewServer(cfg config.Config, store *content.Store, tmpl *template.Template)
 		cfg:   cfg,
 		store: store,
 		tmpl:  tmpl,
-		intro: "Notes, links, references, and fragments — a personal commonplace book.",
+		intro: "Ramblings and reveries.",
 	}
 }
 
@@ -176,7 +176,7 @@ func (s *Server) handleFeed(w http.ResponseWriter, r *http.Request) {
 		Channel: rssChannel{
 			Title:         s.cfg.SiteName,
 			Link:          s.cfg.SiteURL,
-			Description:   "Notes, links, references, and fragments.",
+			Description:   "Ramblings and reveries.",
 			Language:      "en",
 			Generator:     "skull.black",
 			LastBuildDate: lastBuild,
@@ -411,7 +411,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		PageTitle:     "Index",
 		Subtitle:      "",
 		SiteURL:       s.cfg.SiteURL,
-		Intro:         "A personal commonplace book by Pablo Murad.",
+		Intro:         "",
 		EntryCount:    len(entries),
 		Entries:       toEntryViews(entries),
 		EntriesJSON:   toEntriesJSON(entries),

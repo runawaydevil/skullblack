@@ -96,6 +96,7 @@
       setHidden(preview, true);
       preview.classList.remove("is-open");
       preview.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("preview-open");
       if (updateHash && location.hash) history.replaceState(null, "", location.pathname + location.search);
     }
 
@@ -168,6 +169,7 @@
       setHidden(preview, false);
       preview.classList.add("is-open");
       preview.setAttribute("aria-hidden", "false");
+      document.body.classList.add("preview-open");
       if (updateHash) location.hash = slug;
     }
 

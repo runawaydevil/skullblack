@@ -1,19 +1,23 @@
 {{define "head"}}
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{{if .PageTitle}}{{.PageTitle}} — {{end}}{{.SiteName}}</title>
 <link rel="stylesheet" href="/static/style.css">
 <link rel="alternate" type="application/rss+xml" title="Skull Black RSS" href="/feed.xml">
-<meta name="description" content="Notes, links, references, and fragments.">
+<meta name="description" content="Ramblings and reveries.">
 {{end}}
 
 {{define "shell_sidebar"}}
 <aside class="sidebar">
   <div class="sidebar-inner">
-    <a class="brand" href="/" aria-label="Skull Black home">
-      <img class="brand-logo" src="/static/skull.png" alt="Skull Black logo">
-    </a>
-    <p class="brand-desc">Notes, links, references, and fragments.</p>
+    <div class="brand-block">
+      <a class="brand" href="/" aria-label="Skull Black home">
+        <img class="brand-logo" src="/static/skull.png" alt="Skull Black logo">
+      </a>
+      <p class="brand-desc tagline">Ramblings and reveries.</p>
+    </div>
+
+    <hr class="nav-divider" aria-hidden="true">
 
     <nav class="nav" aria-label="Primary">
       <a class="nav-link" href="/">Index</a>
