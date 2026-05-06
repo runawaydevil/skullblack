@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+{{template "head" .}}
+</head>
+<body>
+<div class="shell">
+  {{template "shell_sidebar" .}}
+
+  <main class="main">
+    <header class="page-header">
+      <div class="page-header-left">
+        <h1 class="page-title">{{.PageTitle}}</h1>
+        {{if .Intro}}<p class="page-intro">{{.Intro}}</p>{{end}}
+      </div>
+    </header>
+
+    {{if .Tags}}
+      <ul class="card-grid">
+        {{range .Tags}}
+        <li class="card">
+          <a class="card-link" href="/spaces/{{.Href}}">
+            <div class="card-top">
+              <span class="pill">space</span>
+              <span class="meta-date">{{.Count}}</span>
+            </div>
+            <h2 class="card-title">{{.Tag}}</h2>
+          </a>
+        </li>
+        {{end}}
+      </ul>
+    {{else}}
+      <p class="empty">No spaces yet.</p>
+    {{end}}
+  </main>
+</div>
+</body>
+</html>
+

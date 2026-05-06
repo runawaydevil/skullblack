@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+{{template "head" .}}
+</head>
+<body>
+<div class="shell">
+  {{template "shell_sidebar" .}}
+
+  <main class="main">
+    <p class="back"><a href="/">← Back to Index</a></p>
+
+    <article class="entry">
+      <header class="entry-head">
+        <p class="entry-meta">
+          {{if .Entry.Type}}<span class="pill">{{.Entry.Type}}</span>{{end}}
+          {{if .Entry.Published}}<span class="meta-date">{{.Entry.Published}}</span>{{end}}
+        </p>
+        <h1 class="entry-title">{{.Entry.Title}}</h1>
+        {{if .HasSummary}}<p class="entry-summary lead">{{.Entry.Summary}}</p>{{end}}
+      </header>
+
+      {{if .Entry.Image.HasImage}}
+      <img class="entry-image" src="{{.Entry.Image.URL}}" alt="{{.Entry.Image.Alt}}">
+      {{end}}
+
+      {{if .Entry.HasMarkdownFile}}
+      <div class="entry-content markdown-content">{{.Entry.RenderedHTML}}</div>
+      {{else}}
+      <div class="entry-content plain-content">{{.Entry.Body}}</div>
+      {{end}}
+
+      {{if .HasSource}}
+      <p class="entry-source">
+        <span class="muted">Source:</span>
+        {{if .Entry.SourceTitle}}
+        <a href="{{.Entry.SourceURL}}" rel="noopener noreferrer">{{.Entry.SourceTitle}}</a>
+        {{else}}
+        <a href="{{.Entry.SourceURL}}" rel="noopener noreferrer">{{.Entry.SourceURL}}</a>
+        {{end}}
+      </p>
+      {{end}}
+
+      {{if .Entry.Tags}}
+      <p class="entry-tags">
+        <span class="muted">Spaces:</span>
+        {{range .Entry.Tags}}<span class="tag">{{.}}</span>{{end}}
+      </p>
+      {{end}}
+    </article>
+  </main>
+</div>
+</body>
+</html>

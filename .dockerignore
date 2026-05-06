@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+**/*.log
+
+# Keep build context lean without excluding app code.
+node_modules
+dist
+build
+tmp
+coverage

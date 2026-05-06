@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+{{template "head" .}}
+</head>
+<body>
+<div class="shell">
+  {{template "shell_sidebar" .}}
+
+  <main class="main">
+    <header class="page-header">
+      <div class="page-header-left">
+        {{if .PageTitle}}<h1 class="page-title">{{.PageTitle}}</h1>{{else}}<h1 class="page-title">Index</h1>{{end}}
+        {{if .Subtitle}}<p class="page-subtitle">{{.Subtitle}}</p>{{end}}
+        {{if .Intro}}<p class="page-intro">{{.Intro}}</p>{{end}}
+      </div>
+      {{if gt .EntryCount 0}}<span class="entry-count">{{.EntryCount}} entries</span>{{end}}
+    </header>
+
+    <section aria-label="Entries" class="cards">
+      {{if .Entries}}
+        <ul class="card-grid">
+          {{range .Entries}}
+          <li class="card">
+            <a class="card-link{{if .Image.HasImage}} has-image{{else}} no-image{{end}}" href="/entries/{{.SlugEscaped}}" data-slug="{{.Slug}}">
+              {{if .Image.HasImage}}
+              <img class="entry-card-image" src="{{.Image.CardURL}}" alt="{{.Image.Alt}}" loading="lazy">
+              {{end}}
+              <div class="card-top">
+                {{if .Type}}<span class="pill">{{.Type}}</span>{{end}}
+                {{if .Published}}<span class="meta-date">{{.Published}}</span>{{end}}
+              </div>
+              <h2 class="card-title">{{.Title}}</h2>
+              {{if .Summary}}<p class="card-summary">{{.Summary}}</p>{{end}}
+              {{if .Tags}}
+              <p class="card-tags">
+                {{range .Tags}}<span class="tag">{{.}}</span>{{end}}
+              </p>
+              {{end}}
+              {{if .SourceDomain}}<p class="card-source">{{.SourceDomain}}</p>{{end}}
+            </a>
+          </li>
+          {{end}}
+        </ul>
+      {{else}}
+        <p class="empty">No entries yet.</p>
+      {{end}}
+    </section>
+  </main>
+</div>
+
+<aside id="entry-preview" class="entry-preview" aria-hidden="true" hidden>
+  <button type="button" class="preview-close" data-preview-close aria-label="Close preview">×</button>
+
+  <p class="preview-meta" data-preview-meta></p>
+  <h1 class="preview-title" data-preview-title></h1>
+
+  <img class="preview-image" data-preview-image hidden alt="">
+
+  <p class="preview-summary" data-preview-summary hidden></p>
+  <pre class="preview-body" data-preview-body></pre>
+
+  <p class="preview-source" data-preview-source-wrap hidden>
+    <span class="muted">Source:</span>
+    <a data-preview-source-link rel="noopener noreferrer"></a>
+  </p>
+
+  <div class="preview-tags" data-preview-tags></div>
+
+  <p class="preview-link-row">
+    <a data-preview-link>Read full entry →</a>
+  </p>
+</aside>
+
+{{if .EntriesJSON}}
+<script id="entries-data" type="application/json">{{.EntriesJSON}}</script>
+<script src="/static/app.js" defer></script>
+{{end}}
+</body>
+</html>

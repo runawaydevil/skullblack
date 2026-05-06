@@ -1,0 +1,40 @@
+{{define "head"}}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{if .PageTitle}}{{.PageTitle}} — {{end}}{{.SiteName}}</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="alternate" type="application/rss+xml" title="Skull Black RSS" href="/feed.xml">
+<meta name="description" content="Notes, links, references, and fragments.">
+{{end}}
+
+{{define "shell_sidebar"}}
+<aside class="sidebar">
+  <div class="sidebar-inner">
+    <a class="brand" href="/" aria-label="Skull Black home">
+      <img class="brand-logo" src="/static/skull.png" alt="Skull Black logo">
+    </a>
+    <p class="brand-desc">Notes, links, references, and fragments.</p>
+
+    <nav class="nav" aria-label="Primary">
+      <a class="nav-link" href="/">Index</a>
+
+      {{with .Counts}}
+        {{if gt .Notes 0}}
+        <a class="nav-link" href="/notes"><span class="nav-label">Notes</span><span class="nav-count">{{.Notes}}</span></a>
+        {{end}}
+        {{if gt .Links 0}}
+        <a class="nav-link" href="/links"><span class="nav-label">Links</span><span class="nav-count">{{.Links}}</span></a>
+        {{end}}
+        {{if gt .Quotes 0}}
+        <a class="nav-link" href="/quotes"><span class="nav-label">Quotes</span><span class="nav-count">{{.Quotes}}</span></a>
+        {{end}}
+        {{if gt .Concepts 0}}
+        <a class="nav-link" href="/concepts"><span class="nav-label">Concepts</span><span class="nav-count">{{.Concepts}}</span></a>
+        {{end}}
+      {{end}}
+
+      <a class="nav-link" href="/spaces">Spaces</a>
+    </nav>
+  </div>
+</aside>
+{{end}}

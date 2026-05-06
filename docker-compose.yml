@@ -1,0 +1,11 @@
+name: skullblack
+
+services:
+  skullblack:
+    build: .
+    image: skullblack
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-12080}:${PORT:-12080}"
+    restart: unless-stopped
