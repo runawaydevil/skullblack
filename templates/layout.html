@@ -5,41 +5,36 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%80%3C/text%3E%3C/svg%3E" type="image/svg+xml">
 <link rel="stylesheet" href="/static/style.css">
 <link rel="alternate" type="application/rss+xml" title="{{.SiteName}} RSS" href="/feed.xml">
-<meta name="description" content="Ramblings and reveries.">
+<meta name="description" content="{{.SiteDescription}}">
 {{end}}
 
 {{define "shell_sidebar"}}
 <aside class="sidebar">
   <div class="sidebar-inner">
     <div class="brand-block">
-      <a class="brand" href="/" aria-label="{{.SiteName}} home">
-        <img class="brand-logo" src="/static/skull.png" alt="{{.SiteName}} logo">
+      <a class="brand" href="/" aria-label="Skull Black home">
+        <img class="brand-logo" src="/static/skull.png" alt="">
       </a>
-      <p class="brand-desc tagline">Ramblings and reveries.</p>
+      <div class="brand-text">
+        <p class="brand-title">Skull Black</p>
+        <p class="brand-line brand-line--lead">A public shadowbook</p>
+        <p class="brand-line">for fragments, echoes,</p>
+        <p class="brand-line">artifacts &amp; obsessions.</p>
+      </div>
     </div>
 
-    <hr class="nav-divider" aria-hidden="true">
-
     <nav class="nav" aria-label="Primary">
-      <a class="nav-link" href="/">Index</a>
+      <a class="nav-link" href="/"><span class="nav-label">Index</span></a>
 
-      {{with .Counts}}
-        {{if gt .Notes 0}}
-        <a class="nav-link" href="/notes"><span class="nav-label">Notes</span><span class="nav-count">{{.Notes}}</span></a>
-        {{end}}
-        {{if gt .Links 0}}
-        <a class="nav-link" href="/links"><span class="nav-label">Links</span><span class="nav-count">{{.Links}}</span></a>
-        {{end}}
-        {{if gt .Quotes 0}}
-        <a class="nav-link" href="/quotes"><span class="nav-label">Quotes</span><span class="nav-count">{{.Quotes}}</span></a>
-        {{end}}
-        {{if gt .Concepts 0}}
-        <a class="nav-link" href="/concepts"><span class="nav-label">Concepts</span><span class="nav-count">{{.Concepts}}</span></a>
-        {{end}}
-      {{end}}
+      <a class="nav-link" href="/notes"><span class="nav-label">Fragments</span><span class="nav-count">{{printf "%03d" .Counts.Notes}}</span></a>
+      <a class="nav-link" href="/links"><span class="nav-label">Echoes</span><span class="nav-count">{{printf "%03d" .Counts.Links}}</span></a>
+      <a class="nav-link" href="/quotes"><span class="nav-label">Artifacts</span><span class="nav-count">{{printf "%03d" .Counts.Quotes}}</span></a>
+      <a class="nav-link" href="/concepts"><span class="nav-label">Concepts</span><span class="nav-count">{{printf "%03d" .Counts.Concepts}}</span></a>
 
-      <a class="nav-link" href="/spaces">Spaces</a>
+      <a class="nav-link" href="/spaces"><span class="nav-label">Spaces</span><span class="nav-count">{{printf "%02d" .SpaceCount}}</span></a>
     </nav>
+
+    <p class="sidebar-archive" aria-label="Archive totals">{{printf "%03d" .TotalEntries}} entries · {{printf "%02d" .SpaceCount}} spaces</p>
   </div>
 </aside>
 {{end}}

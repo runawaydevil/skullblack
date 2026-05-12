@@ -10,11 +10,19 @@
   <main class="main">
     <header class="page-header">
       <div class="page-header-left">
-        {{if .PageTitle}}<h1 class="page-title">{{.PageTitle}}</h1>{{else}}<h1 class="page-title">Index</h1>{{end}}
+        {{if and (eq .PageTitle "Index") (eq .EntryCount 0)}}
+        <p class="page-kicker">Index</p>
+        <h1 class="page-title">Shadowbook</h1>
+        {{else}}
+          {{if and (eq .PageTitle "Index") (gt .EntryCount 0)}}
+          <p class="page-kicker">Index</p>
+          {{end}}
+          {{if .PageTitle}}<h1 class="page-title">{{.PageTitle}}</h1>{{else}}<h1 class="page-title">Index</h1>{{end}}
+        {{end}}
         {{if .Subtitle}}<p class="page-subtitle">{{.Subtitle}}</p>{{end}}
         {{if .Intro}}<p class="page-intro">{{.Intro}}</p>{{end}}
       </div>
-      {{if gt .EntryCount 0}}<span class="entry-count">{{.EntryCount}} entries</span>{{end}}
+      {{if gt .EntryCount 0}}<span class="entry-count">{{printf "%03d" .EntryCount}} surfaced</span>{{end}}
     </header>
 
     <section aria-label="Entries" class="cards">
@@ -43,7 +51,22 @@
           {{end}}
         </ul>
       {{else}}
-        <p class="empty">No entries yet.</p>
+        {{if and (eq .PageTitle "Index")}}
+        <section class="empty-state" aria-labelledby="empty-home-title">
+          <strong id="empty-home-title">No fragments surfaced yet.</strong>
+          <p>Nothing has been exhumed from the archive. Fragments, echoes, artifacts, and concepts will surface here.</p>
+        </section>
+        {{else if eq .PageTitle "Fragments"}}
+        <section class="empty-state"><strong>No fragments in this drawer.</strong><p>The archive holds nothing filed under this heading yet.</p></section>
+        {{else if eq .PageTitle "Echoes"}}
+        <section class="empty-state"><strong>No echoes yet.</strong><p>Links and resonances will appear when catalogued.</p></section>
+        {{else if eq .PageTitle "Artifacts"}}
+        <section class="empty-state"><strong>No artifacts catalogued.</strong><p>Quotations and extracts will accrue over time.</p></section>
+        {{else if eq .PageTitle "Concepts"}}
+        <section class="empty-state"><strong>No concepts filed.</strong><p>Ideas in brief will show here when published.</p></section>
+        {{else}}
+        <section class="empty-state"><strong>Nothing surfaced here.</strong><p>This view of the archive is empty.</p></section>
+        {{end}}
       {{end}}
     </section>
   </main>

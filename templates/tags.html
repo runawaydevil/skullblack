@@ -11,7 +11,7 @@
     <header class="page-header">
       <div class="page-header-left">
         <h1 class="page-title">{{.PageTitle}}</h1>
-        {{if .Intro}}<p class="page-intro">{{.Intro}}</p>{{end}}
+        <p class="page-subtitle">Rooms in the archive. Each label gathers what was filed together.</p>
       </div>
     </header>
 
@@ -22,7 +22,7 @@
           <a class="card-link" href="/spaces/{{.Href}}">
             <div class="card-top">
               <span class="pill">space</span>
-              <span class="meta-date">{{.Count}}</span>
+              <span class="meta-date">{{printf "%03d" .Count}}</span>
             </div>
             <h2 class="card-title">{{.Tag}}</h2>
           </a>
@@ -30,7 +30,10 @@
         {{end}}
       </ul>
     {{else}}
-      <p class="empty">No spaces yet.</p>
+      <section class="empty-state">
+        <strong>No rooms in the archive yet.</strong>
+        <p>Spaces appear when entries carry labels. Nothing has been filed under a room name.</p>
+      </section>
     {{end}}
   </main>
 </div>

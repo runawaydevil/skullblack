@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -16,12 +17,16 @@ import (
 	"murad.world/murad-world/internal/content"
 )
 
+const (
+	siteMetaDescription = "A public shadowbook of fragments and remains."
+	siteHomeIntro       = "A public archive of fragments, echoes, artifacts, and concepts. Some are notes. Some are remains."
+)
+
 // Server handles HTTP requests.
 type Server struct {
 	cfg   config.Config
 	store *content.Store
 	tmpl  *template.Template
-	intro string
 }
 
 // NewServer constructs the web server.
@@ -30,7 +35,6 @@ func NewServer(cfg config.Config, store *content.Store, tmpl *template.Template)
 		cfg:   cfg,
 		store: store,
 		tmpl:  tmpl,
-		intro: "Ramblings and reveries.",
 	}
 }
 
@@ -44,9 +48,9 @@ func (s *Server) Register(mux *http.ServeMux) {
 
 	mux.Handle("GET /{$}", http.HandlerFunc(s.handleIndex))
 	mux.Handle("GET /entries/{slug}", http.HandlerFunc(s.handleEntry))
-	mux.Handle("GET /notes", http.HandlerFunc(s.handleType("note", "Notes")))
-	mux.Handle("GET /links", http.HandlerFunc(s.handleType("link", "Links")))
-	mux.Handle("GET /quotes", http.HandlerFunc(s.handleType("quote", "Quotes")))
+	mux.Handle("GET /notes", http.HandlerFunc(s.handleType("note", "Fragments")))
+	mux.Handle("GET /links", http.HandlerFunc(s.handleType("link", "Echoes")))
+	mux.Handle("GET /quotes", http.HandlerFunc(s.handleType("quote", "Artifacts")))
 	mux.Handle("GET /concepts", http.HandlerFunc(s.handleType("concept", "Concepts")))
 	mux.Handle("GET /spaces", http.HandlerFunc(s.handleSpacesIndex))
 	mux.Handle("GET /spaces/{space}", http.HandlerFunc(s.handleSpace))
@@ -176,7 +180,7 @@ func (s *Server) handleFeed(w http.ResponseWriter, r *http.Request) {
 		Channel: rssChannel{
 			Title:         s.cfg.SiteName,
 			Link:          s.cfg.SiteURL,
-			Description:   "Ramblings and reveries.",
+			Description:   siteMetaDescription,
 			Language:      "en",
 			Generator:     "skull.black",
 			LastBuildDate: lastBuild,
@@ -361,16 +365,19 @@ func (s *Server) handleSitemap(w http.ResponseWriter, r *http.Request) {
 }
 
 type indexView struct {
-	SiteName      string
-	PageTitle     string
-	Subtitle      string
-	SiteURL       string
-	Intro         string
-	EntryCount    int
-	Entries       []entryView
-	EntriesJSON   template.HTML
-	Counts        typeCounts
-	LatestEntries []latestView
+	SiteName         string
+	SiteDescription  string
+	PageTitle        string
+	Subtitle         string
+	SiteURL          string
+	Intro            string
+	TotalEntries     int
+	SpaceCount       int
+	EntryCount       int
+	Entries          []entryView
+	EntriesJSON      template.HTML
+	Counts           typeCounts
+	LatestEntries    []latestView
 }
 
 type typeCounts struct {
@@ -384,6 +391,7 @@ type entryView struct {
 	Title           string
 	Slug            string
 	SlugEscaped     string
+	ArchiveRef      string
 	Image           baserow.EntryImage
 	Summary         string
 	Type            string
@@ -406,17 +414,25 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	sortEntriesNewestFirst(entries)
 
+	total, spaceN := archiveSidebar(entries)
+	intro := ""
+	if len(entries) > 0 {
+		intro = siteHomeIntro
+	}
 	data := indexView{
-		SiteName:      s.cfg.SiteName,
-		PageTitle:     "Index",
-		Subtitle:      "",
-		SiteURL:       s.cfg.SiteURL,
-		Intro:         "",
-		EntryCount:    len(entries),
-		Entries:       toEntryViews(entries),
-		EntriesJSON:   toEntriesJSON(entries),
-		Counts:        countTypes(entries),
-		LatestEntries: latest(entries, 5),
+		SiteName:         s.cfg.SiteName,
+		SiteDescription:  siteMetaDescription,
+		PageTitle:        "Index",
+		Subtitle:         "",
+		SiteURL:          s.cfg.SiteURL,
+		Intro:            intro,
+		TotalEntries:     total,
+		SpaceCount:       spaceN,
+		EntryCount:       len(entries),
+		Entries:          toEntryViews(entries),
+		EntriesJSON:      toEntriesJSON(entries),
+		Counts:           countTypes(entries),
+		LatestEntries:    latest(entries, 5),
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
@@ -435,17 +451,21 @@ func (s *Server) handleType(typeValue string, pageTitle string) http.HandlerFunc
 
 		sortEntriesNewestFirst(entries)
 		filtered := filterByType(entries, typeValue)
+		total, spaceN := archiveSidebar(entries)
 		data := indexView{
-			SiteName:      s.cfg.SiteName,
-			PageTitle:     pageTitle,
-			Subtitle:      "Newest first.",
-			SiteURL:       s.cfg.SiteURL,
-			Intro:         "",
-			EntryCount:    len(filtered),
-			Entries:       toEntryViews(filtered),
-			EntriesJSON:   toEntriesJSON(filtered),
-			Counts:        countTypes(entries),
-			LatestEntries: latest(entries, 5),
+			SiteName:         s.cfg.SiteName,
+			SiteDescription:  siteMetaDescription,
+			PageTitle:        pageTitle,
+			Subtitle:         "Surfaced newest first.",
+			SiteURL:          s.cfg.SiteURL,
+			Intro:            "",
+			TotalEntries:     total,
+			SpaceCount:       spaceN,
+			EntryCount:       len(filtered),
+			Entries:          toEntryViews(filtered),
+			EntriesJSON:      toEntriesJSON(filtered),
+			Counts:           countTypes(entries),
+			LatestEntries:    latest(entries, 5),
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
@@ -456,13 +476,16 @@ func (s *Server) handleType(typeValue string, pageTitle string) http.HandlerFunc
 }
 
 type tagsIndexView struct {
-	SiteName      string
-	PageTitle     string
-	SiteURL       string
-	Intro         string
-	Counts        typeCounts
-	LatestEntries []latestView
-	Tags          []tagCountView
+	SiteName         string
+	SiteDescription  string
+	PageTitle        string
+	SiteURL          string
+	Intro            string
+	TotalEntries     int
+	SpaceCount       int
+	Counts           typeCounts
+	LatestEntries    []latestView
+	Tags             []tagCountView
 }
 
 type tagCountView struct {
@@ -486,14 +509,18 @@ func (s *Server) handleSpacesIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Slice(out, func(i, j int) bool { return strings.ToLower(out[i].Tag) < strings.ToLower(out[j].Tag) })
 
+	total, spaceN := archiveSidebar(entries)
 	data := tagsIndexView{
-		SiteName:      s.cfg.SiteName,
-		PageTitle:     "Spaces",
-		SiteURL:       s.cfg.SiteURL,
-		Intro:         "",
-		Counts:        countTypes(entries),
-		LatestEntries: latest(entries, 5),
-		Tags:          out,
+		SiteName:         s.cfg.SiteName,
+		SiteDescription:  siteMetaDescription,
+		PageTitle:        "Spaces",
+		SiteURL:          s.cfg.SiteURL,
+		Intro:            "",
+		TotalEntries:     total,
+		SpaceCount:       spaceN,
+		Counts:           countTypes(entries),
+		LatestEntries:    latest(entries, 5),
+		Tags:             out,
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
@@ -517,17 +544,21 @@ func (s *Server) handleSpace(w http.ResponseWriter, r *http.Request) {
 
 	sortEntriesNewestFirst(entries)
 	filtered := filterBySpace(entries, space)
+	total, spaceN := archiveSidebar(entries)
 	data := indexView{
-		SiteName:      s.cfg.SiteName,
-		PageTitle:     "Space: " + space,
-		Subtitle:      "Newest first.",
-		SiteURL:       s.cfg.SiteURL,
-		Intro:         "",
-		EntryCount:    len(filtered),
-		Entries:       toEntryViews(filtered),
-		EntriesJSON:   toEntriesJSON(filtered),
-		Counts:        countTypes(entries),
-		LatestEntries: latest(entries, 5),
+		SiteName:         s.cfg.SiteName,
+		SiteDescription:  siteMetaDescription,
+		PageTitle:        "Space: " + space,
+		Subtitle:         "Surfaced newest first.",
+		SiteURL:          s.cfg.SiteURL,
+		Intro:            "",
+		TotalEntries:     total,
+		SpaceCount:       spaceN,
+		EntryCount:       len(filtered),
+		Entries:          toEntryViews(filtered),
+		EntriesJSON:      toEntriesJSON(filtered),
+		Counts:           countTypes(entries),
+		LatestEntries:    latest(entries, 5),
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
@@ -537,14 +568,17 @@ func (s *Server) handleSpace(w http.ResponseWriter, r *http.Request) {
 }
 
 type entryPageView struct {
-	SiteName      string
-	PageTitle     string
-	SiteURL       string
-	Entry         entryView
-	HasSummary    bool
-	HasSource     bool
-	Counts        typeCounts
-	LatestEntries []latestView
+	SiteName         string
+	SiteDescription  string
+	PageTitle        string
+	SiteURL          string
+	TotalEntries     int
+	SpaceCount       int
+	Entry            entryView
+	HasSummary       bool
+	HasSource        bool
+	Counts           typeCounts
+	LatestEntries    []latestView
 }
 
 func (s *Server) handleEntry(w http.ResponseWriter, r *http.Request) {
@@ -571,6 +605,7 @@ func (s *Server) handleEntry(w http.ResponseWriter, r *http.Request) {
 		Title:           base.Title,
 		Slug:            base.Slug,
 		SlugEscaped:     url.PathEscape(base.Slug),
+		ArchiveRef:      fmt.Sprintf("SB-%04d", base.ID),
 		Image:           img,
 		Summary:         base.Summary,
 		Type:            base.Type,
@@ -588,15 +623,23 @@ func (s *Server) handleEntry(w http.ResponseWriter, r *http.Request) {
 		title = base.Slug
 	}
 
+	total, spaceN := 0, 0
+	if all, err := s.store.All(); err == nil {
+		total, spaceN = archiveSidebar(all)
+	}
+
 	data := entryPageView{
-		SiteName:      s.cfg.SiteName,
-		PageTitle:     title,
-		SiteURL:       s.cfg.SiteURL,
-		Entry:         ev,
-		HasSummary:    strings.TrimSpace(base.Summary) != "",
-		HasSource:     okSrc,
-		Counts:        s.sidebarCounts(),
-		LatestEntries: latestEntriesSafe(s, 5),
+		SiteName:         s.cfg.SiteName,
+		SiteDescription:  siteMetaDescription,
+		PageTitle:        title,
+		SiteURL:          s.cfg.SiteURL,
+		TotalEntries:     total,
+		SpaceCount:       spaceN,
+		Entry:            ev,
+		HasSummary:       strings.TrimSpace(base.Summary) != "",
+		HasSource:        okSrc,
+		Counts:           s.sidebarCounts(),
+		LatestEntries:    latestEntriesSafe(s, 5),
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -609,16 +652,26 @@ func (s *Server) handleEntry(w http.ResponseWriter, r *http.Request) {
 func (s *Server) renderUnavailable(w http.ResponseWriter, code int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(code)
+	total, spaceN := 0, 0
+	if all, err := s.store.All(); err == nil {
+		total, spaceN = archiveSidebar(all)
+	}
 	_ = s.tmpl.ExecuteTemplate(w, "unavailable.html", struct {
-		SiteName      string
-		PageTitle     string
-		Counts        typeCounts
-		LatestEntries []latestView
+		SiteName         string
+		SiteDescription  string
+		PageTitle        string
+		TotalEntries     int
+		SpaceCount       int
+		Counts           typeCounts
+		LatestEntries    []latestView
 	}{
-		SiteName:      s.cfg.SiteName,
-		PageTitle:     "Unavailable",
-		Counts:        s.sidebarCounts(),
-		LatestEntries: latestEntriesSafe(s, 5),
+		SiteName:         s.cfg.SiteName,
+		SiteDescription:  siteMetaDescription,
+		PageTitle:        "Unavailable",
+		TotalEntries:     total,
+		SpaceCount:       spaceN,
+		Counts:           s.sidebarCounts(),
+		LatestEntries:    latestEntriesSafe(s, 5),
 	})
 }
 
@@ -726,6 +779,7 @@ func toEntryViews(entries []content.PreparedEntry) []entryView {
 			Title:        base.Title,
 			Slug:         base.Slug,
 			SlugEscaped:  url.PathEscape(base.Slug),
+			ArchiveRef:   fmt.Sprintf("SB-%04d", base.ID),
 			Image:        img,
 			Summary:      base.Summary,
 			Type:         base.Type,
@@ -822,4 +876,8 @@ func allSpaces(entries []content.PreparedEntry) []string {
 	}
 	sort.Slice(out, func(i, j int) bool { return strings.ToLower(out[i]) < strings.ToLower(out[j]) })
 	return out
+}
+
+func archiveSidebar(entries []content.PreparedEntry) (total int, spaceN int) {
+	return len(entries), len(spaceCounts(entries))
 }
