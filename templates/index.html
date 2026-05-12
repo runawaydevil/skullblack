@@ -7,45 +7,50 @@
 <div class="shell">
   {{template "shell_sidebar" .}}
 
-  <main class="main">
-    <header class="page-header">
+  <main class="main{{if eq .PageTitle "Index"}} main--home{{end}}">
+    {{if eq .PageTitle "Index"}}
+    <header class="page-header page-header--home">
       <div class="page-header-left">
-        {{if and (eq .PageTitle "Index") (eq .EntryCount 0)}}
-        <p class="page-kicker">Index</p>
-        <h1 class="page-title">Shadowbook</h1>
-        {{else}}
-          {{if and (eq .PageTitle "Index") (gt .EntryCount 0)}}
-          <p class="page-kicker">Index</p>
-          {{end}}
-          {{if .PageTitle}}<h1 class="page-title">{{.PageTitle}}</h1>{{else}}<h1 class="page-title">Index</h1>{{end}}
-        {{end}}
-        {{if .Subtitle}}<p class="page-subtitle">{{.Subtitle}}</p>{{end}}
-        {{if .Intro}}<p class="page-intro">{{.Intro}}</p>{{end}}
+        <p class="kicker">INDEX / PUBLIC SHADOWBOOK</p>
+        <h1 class="home-title">Skull Black</h1>
+        {{if .Intro}}<p class="home-intro">{{.Intro}}</p>{{end}}
       </div>
       {{if gt .EntryCount 0}}<span class="entry-count">{{printf "%03d" .EntryCount}} surfaced</span>{{end}}
     </header>
+    {{else}}
+    <header class="page-header">
+      <div class="page-header-left">
+        {{if .PageTitle}}<h1 class="page-title">{{.PageTitle}}</h1>{{else}}<h1 class="page-title">Archive</h1>{{end}}
+        {{if .Subtitle}}<p class="page-subtitle">{{.Subtitle}}</p>{{end}}
+      </div>
+      {{if gt .EntryCount 0}}<span class="entry-count">{{printf "%03d" .EntryCount}} surfaced</span>{{end}}
+    </header>
+    {{end}}
 
-    <section aria-label="Entries" class="cards">
+    <section aria-label="Entries" class="entries-section">
       {{if .Entries}}
-        <ul class="card-grid">
+        <ul class="entry-list">
           {{range .Entries}}
-          <li class="card">
-            <a class="card-link{{if .Image.HasImage}} has-image{{else}} no-image{{end}}" href="/entries/{{.SlugEscaped}}" data-slug="{{.Slug}}">
-              {{if .Image.HasImage}}
-              <img class="entry-card-image" src="{{.Image.CardURL}}" alt="{{.Image.Alt}}" loading="lazy">
-              {{end}}
-              <div class="card-top">
-                {{if .Type}}<span class="pill">{{.Type}}</span>{{end}}
-                {{if .Published}}<span class="meta-date">{{.Published}}</span>{{end}}
+          <li class="entry-ficha">
+            <a class="entry-ficha-link{{if .Image.HasImage}} has-image{{end}}" href="/entries/{{.SlugEscaped}}" data-slug="{{.Slug}}">
+              <div class="entry-ficha-row">
+                {{if .Image.HasImage}}
+                <img class="entry-ficha-thumb" src="{{.Image.CardURL}}" alt="{{.Image.Alt}}" loading="lazy">
+                {{end}}
+                <div class="entry-ficha-body">
+                  <p class="entry-ficha-meta">
+                    <span class="entry-ficha-ref">{{.ArchiveCode}}</span>
+                    {{if .Type}}<span class="entry-ficha-type">{{.Type}}</span>{{end}}
+                    {{if .Published}}<span class="entry-ficha-date">{{.Published}}</span>{{end}}
+                  </p>
+                  <h2 class="entry-ficha-title">{{.Title}}</h2>
+                  {{if .Summary}}<p class="entry-ficha-summary">{{.Summary}}</p>{{end}}
+                  {{if .Tags}}
+                  <p class="entry-ficha-spaces"><span class="entry-ficha-spaces-label">spaces:</span>{{range .Tags}} <span class="tag">{{.}}</span>{{end}}</p>
+                  {{end}}
+                  {{if .SourceDomain}}<p class="entry-ficha-source">{{.SourceDomain}}</p>{{end}}
+                </div>
               </div>
-              <h2 class="card-title">{{.Title}}</h2>
-              {{if .Summary}}<p class="card-summary">{{.Summary}}</p>{{end}}
-              {{if .Tags}}
-              <p class="card-tags">
-                {{range .Tags}}<span class="tag">{{.}}</span>{{end}}
-              </p>
-              {{end}}
-              {{if .SourceDomain}}<p class="card-source">{{.SourceDomain}}</p>{{end}}
             </a>
           </li>
           {{end}}
@@ -53,17 +58,17 @@
       {{else}}
         {{if and (eq .PageTitle "Index")}}
         <section class="empty-state" aria-labelledby="empty-home-title">
-          <strong id="empty-home-title">No fragments surfaced yet.</strong>
-          <p>Nothing has been exhumed from the archive. Fragments, echoes, artifacts, and concepts will surface here.</p>
+          <strong id="empty-home-title">The archive is still sealed.</strong>
+          <p>No fragments have been exhumed yet.</p>
         </section>
         {{else if eq .PageTitle "Fragments"}}
-        <section class="empty-state"><strong>No fragments in this drawer.</strong><p>The archive holds nothing filed under this heading yet.</p></section>
+        <section class="empty-state"><strong>This drawer is empty.</strong><p>Nothing filed under fragments yet.</p></section>
         {{else if eq .PageTitle "Echoes"}}
-        <section class="empty-state"><strong>No echoes yet.</strong><p>Links and resonances will appear when catalogued.</p></section>
+        <section class="empty-state"><strong>No echoes registered.</strong><p>Resonances will surface when catalogued.</p></section>
         {{else if eq .PageTitle "Artifacts"}}
-        <section class="empty-state"><strong>No artifacts catalogued.</strong><p>Quotations and extracts will accrue over time.</p></section>
+        <section class="empty-state"><strong>No artifacts on file.</strong><p>Extracts accrue in their own time.</p></section>
         {{else if eq .PageTitle "Concepts"}}
-        <section class="empty-state"><strong>No concepts filed.</strong><p>Ideas in brief will show here when published.</p></section>
+        <section class="empty-state"><strong>No concepts filed.</strong><p>Brief ideas appear when published.</p></section>
         {{else}}
         <section class="empty-state"><strong>Nothing surfaced here.</strong><p>This view of the archive is empty.</p></section>
         {{end}}

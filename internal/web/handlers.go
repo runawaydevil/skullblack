@@ -19,7 +19,7 @@ import (
 
 const (
 	siteMetaDescription = "A public shadowbook of fragments and remains."
-	siteHomeIntro       = "A public archive of fragments, echoes, artifacts, and concepts. Some are notes. Some are remains."
+	siteHomeIntro       = "Fragments, echoes, artifacts, concepts, and other remains."
 )
 
 // Server handles HTTP requests.
@@ -392,6 +392,7 @@ type entryView struct {
 	Slug            string
 	SlugEscaped     string
 	ArchiveRef      string
+	ArchiveCode     string
 	Image           baserow.EntryImage
 	Summary         string
 	Type            string
@@ -415,17 +416,13 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	sortEntriesNewestFirst(entries)
 
 	total, spaceN := archiveSidebar(entries)
-	intro := ""
-	if len(entries) > 0 {
-		intro = siteHomeIntro
-	}
 	data := indexView{
 		SiteName:         s.cfg.SiteName,
 		SiteDescription:  siteMetaDescription,
 		PageTitle:        "Index",
 		Subtitle:         "",
 		SiteURL:          s.cfg.SiteURL,
-		Intro:            intro,
+		Intro:            siteHomeIntro,
 		TotalEntries:     total,
 		SpaceCount:       spaceN,
 		EntryCount:       len(entries),
@@ -606,6 +603,7 @@ func (s *Server) handleEntry(w http.ResponseWriter, r *http.Request) {
 		Slug:            base.Slug,
 		SlugEscaped:     url.PathEscape(base.Slug),
 		ArchiveRef:      fmt.Sprintf("SB-%04d", base.ID),
+		ArchiveCode:     archiveTypeCode(base.ID, base.Type),
 		Image:           img,
 		Summary:         base.Summary,
 		Type:            base.Type,
@@ -734,17 +732,50 @@ func latestEntriesSafe(s *Server, n int) []latestView {
 	return latest(entries, n)
 }
 
+// normalizeTypeBucket maps Baserow Type select values (and UI synonyms) to route buckets:
+// note, link, quote, concept. Unknown values return "".
+func normalizeTypeBucket(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "note", "notes", "fragment", "fragments":
+		return "note"
+	case "link", "links", "echo", "echoes":
+		return "link"
+	case "quote", "quotes", "artifact", "artifacts":
+		return "quote"
+	case "concept", "concepts":
+		return "concept"
+	default:
+		return ""
+	}
+}
+
+// archiveTypeCode returns a stamped id (FRG-0001, ECH-0002, …) or SB- for uncategorized types.
+func archiveTypeCode(id int, typ string) string {
+	prefix := "SB"
+	switch normalizeTypeBucket(typ) {
+	case "note":
+		prefix = "FRG"
+	case "link":
+		prefix = "ECH"
+	case "quote":
+		prefix = "ART"
+	case "concept":
+		prefix = "CON"
+	}
+	return fmt.Sprintf("%s-%04d", prefix, id)
+}
+
 func countTypes(entries []content.PreparedEntry) typeCounts {
 	var counts typeCounts
 	for _, e := range entries {
-		switch strings.ToLower(strings.TrimSpace(e.Entry.Type)) {
-		case "note", "notes":
+		switch normalizeTypeBucket(e.Entry.Type) {
+		case "note":
 			counts.Notes++
-		case "link", "links":
+		case "link":
 			counts.Links++
-		case "quote", "quotes":
+		case "quote":
 			counts.Quotes++
-		case "concept", "concepts":
+		case "concept":
 			counts.Concepts++
 		}
 	}
@@ -780,6 +811,7 @@ func toEntryViews(entries []content.PreparedEntry) []entryView {
 			Slug:         base.Slug,
 			SlugEscaped:  url.PathEscape(base.Slug),
 			ArchiveRef:   fmt.Sprintf("SB-%04d", base.ID),
+			ArchiveCode:  archiveTypeCode(base.ID, base.Type),
 			Image:        img,
 			Summary:      base.Summary,
 			Type:         base.Type,
@@ -829,11 +861,13 @@ func toEntriesJSON(entries []content.PreparedEntry) template.HTML {
 }
 
 func filterByType(entries []content.PreparedEntry, typeValue string) []content.PreparedEntry {
-	want := strings.ToLower(strings.TrimSpace(typeValue))
+	want := normalizeTypeBucket(typeValue)
+	if want == "" {
+		return nil
+	}
 	out := make([]content.PreparedEntry, 0, len(entries))
 	for _, e := range entries {
-		got := strings.ToLower(strings.TrimSpace(e.Entry.Type))
-		if got == want || got == want+"s" {
+		if normalizeTypeBucket(e.Entry.Type) == want {
 			out = append(out, e)
 		}
 	}

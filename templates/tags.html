@@ -16,27 +16,26 @@
     </header>
 
     {{if .Tags}}
-      <ul class="card-grid">
+      <ul class="entry-list">
         {{range .Tags}}
-        <li class="card">
-          <a class="card-link" href="/spaces/{{.Href}}">
-            <div class="card-top">
-              <span class="pill">space</span>
-              <span class="meta-date">{{printf "%03d" .Count}}</span>
-            </div>
-            <h2 class="card-title">{{.Tag}}</h2>
+        <li class="entry-ficha">
+          <a class="entry-ficha-link" href="/spaces/{{.Href}}">
+            <p class="entry-ficha-meta">
+              <span class="entry-ficha-ref">SPACE</span>
+              <span class="entry-ficha-type">{{printf "%03d" .Count}} entries</span>
+            </p>
+            <h2 class="entry-ficha-title">{{.Tag}}</h2>
           </a>
         </li>
         {{end}}
       </ul>
     {{else}}
       <section class="empty-state">
-        <strong>No rooms in the archive yet.</strong>
-        <p>Spaces appear when entries carry labels. Nothing has been filed under a room name.</p>
+        <strong>No rooms yet.</strong>
+        <p>Spaces appear when entries carry labels.</p>
       </section>
     {{end}}
   </main>
 </div>
 </body>
 </html>
-

@@ -80,13 +80,13 @@
     let selectedSlug = null;
 
     function clearSelectedCard() {
-      const prev = document.querySelector(".card-link.is-selected");
+      const prev = document.querySelector(".entry-ficha-link.is-selected");
       if (prev) prev.classList.remove("is-selected");
     }
 
     function setSelectedCard(slug) {
       clearSelectedCard();
-      const el = document.querySelector(`.card-link[data-slug="${CSS.escape(slug)}"]`);
+      const el = document.querySelector(`.entry-ficha-link[data-slug="${CSS.escape(slug)}"]`);
       if (el) el.classList.add("is-selected");
     }
 
@@ -174,7 +174,7 @@
     }
 
     document.addEventListener("click", (ev) => {
-      const a = ev.target instanceof Element ? ev.target.closest("a.card-link[data-slug]") : null;
+      const a = ev.target instanceof Element ? ev.target.closest("a.entry-ficha-link[data-slug]") : null;
       if (!a) return;
       if (hasModifierKey(ev) || ev.button !== 0) return;
 
