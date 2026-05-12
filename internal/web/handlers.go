@@ -284,6 +284,31 @@ func sortEntriesNewestFirst(entries []content.PreparedEntry) {
 	})
 }
 
+// sortEntriesOldestFirst orders entries for archive ordinals: earliest effective
+// date first; same instant uses lower Baserow ID first (then slug).
+func sortEntriesOldestFirst(entries []content.PreparedEntry) {
+	sort.SliceStable(entries, func(i, j int) bool {
+		ti, okI := effectiveDate(entries[i])
+		tj, okJ := effectiveDate(entries[j])
+		if okI && okJ {
+			if ti.Equal(tj) {
+				if entries[i].Entry.ID != entries[j].Entry.ID {
+					return entries[i].Entry.ID < entries[j].Entry.ID
+				}
+				return entries[i].Entry.Slug < entries[j].Entry.Slug
+			}
+			return ti.Before(tj)
+		}
+		if okI != okJ {
+			return okI
+		}
+		if entries[i].Entry.ID != entries[j].Entry.ID {
+			return entries[i].Entry.ID < entries[j].Entry.ID
+		}
+		return entries[i].Entry.Slug < entries[j].Entry.Slug
+	})
+}
+
 func latest(entries []content.PreparedEntry, n int) []latestView {
 	if n <= 0 || len(entries) == 0 {
 		return nil
@@ -413,6 +438,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	archiveOrd := buildArchiveOrdinalByID(entries)
 	sortEntriesNewestFirst(entries)
 
 	total, spaceN := archiveSidebar(entries)
@@ -426,7 +452,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		TotalEntries:     total,
 		SpaceCount:       spaceN,
 		EntryCount:       len(entries),
-		Entries:          toEntryViews(entries),
+		Entries:          toEntryViews(entries, archiveOrd),
 		EntriesJSON:      toEntriesJSON(entries),
 		Counts:           countTypes(entries),
 		LatestEntries:    latest(entries, 5),
@@ -446,6 +472,7 @@ func (s *Server) handleType(typeValue string, pageTitle string) http.HandlerFunc
 			return
 		}
 
+		archiveOrd := buildArchiveOrdinalByID(entries)
 		sortEntriesNewestFirst(entries)
 		filtered := filterByType(entries, typeValue)
 		total, spaceN := archiveSidebar(entries)
@@ -459,7 +486,7 @@ func (s *Server) handleType(typeValue string, pageTitle string) http.HandlerFunc
 			TotalEntries:     total,
 			SpaceCount:       spaceN,
 			EntryCount:       len(filtered),
-			Entries:          toEntryViews(filtered),
+			Entries:          toEntryViews(filtered, archiveOrd),
 			EntriesJSON:      toEntriesJSON(filtered),
 			Counts:           countTypes(entries),
 			LatestEntries:    latest(entries, 5),
@@ -539,6 +566,7 @@ func (s *Server) handleSpace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	archiveOrd := buildArchiveOrdinalByID(entries)
 	sortEntriesNewestFirst(entries)
 	filtered := filterBySpace(entries, space)
 	total, spaceN := archiveSidebar(entries)
@@ -552,7 +580,7 @@ func (s *Server) handleSpace(w http.ResponseWriter, r *http.Request) {
 		TotalEntries:     total,
 		SpaceCount:       spaceN,
 		EntryCount:       len(filtered),
-		Entries:          toEntryViews(filtered),
+		Entries:          toEntryViews(filtered, archiveOrd),
 		EntriesJSON:      toEntriesJSON(filtered),
 		Counts:           countTypes(entries),
 		LatestEntries:    latest(entries, 5),
@@ -598,12 +626,20 @@ func (s *Server) handleEntry(w http.ResponseWriter, r *http.Request) {
 	base := e.Entry
 	safeSourceURL, okSrc := parseHTTPURL(base.SourceURL)
 	img := baserow.ResolveEntryImage(base)
+
+	var archiveOrd map[int]int
+	total, spaceN := 0, 0
+	if all, err := s.store.All(); err == nil {
+		archiveOrd = buildArchiveOrdinalByID(all)
+		total, spaceN = archiveSidebar(all)
+	}
+
 	ev := entryView{
 		Title:           base.Title,
 		Slug:            base.Slug,
 		SlugEscaped:     url.PathEscape(base.Slug),
 		ArchiveRef:      fmt.Sprintf("SB-%04d", base.ID),
-		ArchiveCode:     archiveTypeCode(base.ID, base.Type),
+		ArchiveCode:     archiveDisplayCode(base, archiveOrd),
 		Image:           img,
 		Summary:         base.Summary,
 		Type:            base.Type,
@@ -619,11 +655,6 @@ func (s *Server) handleEntry(w http.ResponseWriter, r *http.Request) {
 	title := base.Title
 	if title == "" {
 		title = base.Slug
-	}
-
-	total, spaceN := 0, 0
-	if all, err := s.store.All(); err == nil {
-		total, spaceN = archiveSidebar(all)
 	}
 
 	data := entryPageView{
@@ -749,8 +780,41 @@ func normalizeTypeBucket(raw string) string {
 	}
 }
 
-// archiveTypeCode returns a stamped id (FRG-0001, ECH-0002, …) or SB- for uncategorized types.
-func archiveTypeCode(id int, typ string) string {
+// buildArchiveOrdinalByID assigns 1-based ordinals per bucket (note/link/quote/concept)
+// and for uncategorized types, by oldest-first effective publication date (same rules as
+// sortEntriesOldestFirst). Caller should pass the full public entry list from the store.
+func buildArchiveOrdinalByID(entries []content.PreparedEntry) map[int]int {
+	sorted := append([]content.PreparedEntry(nil), entries...)
+	sortEntriesOldestFirst(sorted)
+	out := make(map[int]int, len(sorted))
+	var nNote, nLink, nQuote, nConcept, nSB int
+	for _, e := range sorted {
+		switch normalizeTypeBucket(e.Entry.Type) {
+		case "note":
+			nNote++
+			out[e.Entry.ID] = nNote
+		case "link":
+			nLink++
+			out[e.Entry.ID] = nLink
+		case "quote":
+			nQuote++
+			out[e.Entry.ID] = nQuote
+		case "concept":
+			nConcept++
+			out[e.Entry.ID] = nConcept
+		default:
+			nSB++
+			out[e.Entry.ID] = nSB
+		}
+	}
+	return out
+}
+
+// formatArchiveCode renders FRG/ECH/ART/CON/SB with a 1-based ordinal within that bucket.
+func formatArchiveCode(typ string, ordinal int) string {
+	if ordinal < 1 {
+		ordinal = 1
+	}
 	prefix := "SB"
 	switch normalizeTypeBucket(typ) {
 	case "note":
@@ -762,7 +826,19 @@ func archiveTypeCode(id int, typ string) string {
 	case "concept":
 		prefix = "CON"
 	}
-	return fmt.Sprintf("%s-%04d", prefix, id)
+	return fmt.Sprintf("%s-%04d", prefix, ordinal)
+}
+
+// archiveDisplayCode uses buildArchiveOrdinalByID output; falls back to SB-{id} if ord missing.
+func archiveDisplayCode(base baserow.Entry, ord map[int]int) string {
+	if ord == nil {
+		return fmt.Sprintf("SB-%04d", base.ID)
+	}
+	o, ok := ord[base.ID]
+	if !ok || o < 1 {
+		return fmt.Sprintf("SB-%04d", base.ID)
+	}
+	return formatArchiveCode(base.Type, o)
 }
 
 func countTypes(entries []content.PreparedEntry) typeCounts {
@@ -800,7 +876,7 @@ type entryIndexJSON struct {
 	Tags         []string `json:"tags,omitempty"`
 }
 
-func toEntryViews(entries []content.PreparedEntry) []entryView {
+func toEntryViews(entries []content.PreparedEntry, archiveOrd map[int]int) []entryView {
 	out := make([]entryView, 0, len(entries))
 	for _, e := range entries {
 		base := e.Entry
@@ -811,7 +887,7 @@ func toEntryViews(entries []content.PreparedEntry) []entryView {
 			Slug:         base.Slug,
 			SlugEscaped:  url.PathEscape(base.Slug),
 			ArchiveRef:   fmt.Sprintf("SB-%04d", base.ID),
-			ArchiveCode:  archiveTypeCode(base.ID, base.Type),
+			ArchiveCode:  archiveDisplayCode(base, archiveOrd),
 			Image:        img,
 			Summary:      base.Summary,
 			Type:         base.Type,
