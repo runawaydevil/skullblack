@@ -2,8 +2,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{{if .PageTitle}}{{.PageTitle}} — {{end}}{{.SiteName}}</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%80%3C/text%3E%3C/svg%3E" type="image/svg+xml">
 <link rel="stylesheet" href="/static/style.css">
-<link rel="alternate" type="application/rss+xml" title="Skull Black RSS" href="/feed.xml">
+<link rel="alternate" type="application/rss+xml" title="{{.SiteName}} RSS" href="/feed.xml">
 <meta name="description" content="Ramblings and reveries.">
 {{end}}
 
@@ -11,8 +12,8 @@
 <aside class="sidebar">
   <div class="sidebar-inner">
     <div class="brand-block">
-      <a class="brand" href="/" aria-label="Skull Black home">
-        <img class="brand-logo" src="/static/skull.png" alt="Skull Black logo">
+      <a class="brand" href="/" aria-label="{{.SiteName}} home">
+        <img class="brand-logo" src="/static/skull.png" alt="{{.SiteName}} logo">
       </a>
       <p class="brand-desc tagline">Ramblings and reveries.</p>
     </div>
